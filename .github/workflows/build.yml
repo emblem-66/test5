@@ -3,9 +3,6 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "0 7 * * *"
-  push:
-    branches:
-      - main
 env:
   tag: ghcr.io/${{ github.actor }}/${{ github.event.repository.name }}:latest
 jobs: 
@@ -21,25 +18,3 @@ jobs:
       run: podman build -f Containerfile -t ${{ env.tag }} .
     - name: push
       run: podman push --creds=${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} ${{ env.tag }}
-
-    - name: Build bootable ISO from bootc image
-      run: |
-        mkdir out
-        podman run --rm --privileged \
-          -v ${{ github.workspace }}:/workspace:Z \
-          -w /workspace \
-          fedora:latest bash -c "
-            set -e
-            dnf install -y bootc lorax qemu-img
-            bootc image build \
-              --type iso \
-              --image ${{ env.tag }} \
-              --output ./out
-          "
-        ls -lh out
-
-    - name: Upload ISO artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: installer-iso
-        path: out/*.iso
